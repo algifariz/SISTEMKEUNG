@@ -89,6 +89,35 @@ if ($method == 'GET') {
                 }
                 break;
 
+            case 'clear':
+                if ($conn->query("TRUNCATE TABLE transactions")) {
+                    $response = ['success' => true];
+                } else {
+                    $response['message'] = "Error clearing data: " . $conn->error;
+                }
+                break;
+
+            case 'batch_add':
+                if (isset($data['data']) && is_array($data['data'])) {
+                    $conn->begin_transaction();
+                    try {
+                        $stmt = $conn->prepare("INSERT INTO transactions (type, amount, category, date, description) VALUES (?, ?, ?, ?, ?)");
+                        foreach ($data['data'] as $t) {
+                            $stmt->bind_param("sdsss", $t['type'], $t['amount'], $t['category'], $t['date'], $t['description']);
+                            $stmt->execute();
+                        }
+                        $stmt->close();
+                        $conn->commit();
+                        $response = ['success' => true];
+                    } catch (mysqli_sql_exception $exception) {
+                        $conn->rollback();
+                        $response['message'] = "Error during batch insert: " . $exception->getMessage();
+                    }
+                } else {
+                    $response['message'] = "Missing transaction data for 'batch_add' action.";
+                }
+                break;
+
             default:
                 $response['message'] = "Invalid action specified.";
                 break;

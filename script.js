@@ -542,22 +542,113 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// Remove functions that are no longer needed
-function clearAllData() {
-    showNotification('This function is disabled in server mode.', 'info');
-}
+// --- DATA MANAGEMENT ---
+
 function exportData() {
-    showNotification('This function is disabled in server mode.', 'info');
+    if (transactions.length === 0) {
+        showNotification('Tidak ada data untuk diekspor.', 'info');
+        return;
+    }
+
+    const dataStr = JSON.stringify(transactions, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `money_tracker_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showNotification('Data berhasil diekspor! 📄', 'success');
 }
+
 function importData() {
-    showNotification('This function is disabled in server mode.', 'info');
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.json';
+
+    fileInput.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const importedTransactions = JSON.parse(event.target.result);
+                if (!Array.isArray(importedTransactions)) {
+                    throw new Error("Format JSON tidak valid.");
+                }
+
+                // Optional: Clear existing data before import
+                if (confirm('Hapus data lama sebelum mengimpor?')) {
+                    await clearAllData(false); // silent clear
+                }
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'batch_add', data: importedTransactions })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    await loadDataFromServer();
+                    showNotification('Data berhasil diimpor! 🚀', 'success');
+                } else {
+                    showNotification(`Error: ${result.message}`, 'error');
+                }
+            } catch (error) {
+                showNotification(`Gagal mengimpor data: ${error.message}`, 'error');
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    fileInput.click();
 }
+
+async function clearAllData(confirmFirst = true) {
+    const confirmed = confirmFirst
+        ? confirm('APAKAH ANDA YAKIN? Semua data transaksi akan dihapus secara permanen. Aksi ini tidak dapat dibatalkan.')
+        : true;
+
+    if (confirmed) {
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'clear' })
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                transactions = [];
+                updateAllDisplays();
+                if (confirmFirst) showNotification('Semua data berhasil dihapus! 🧹', 'success');
+            } else {
+                showNotification(`Error: ${result.message}`, 'error');
+            }
+        } catch (error) {
+            showNotification('Gagal menghapus data. Periksa koneksi server.', 'error');
+        }
+    }
+}
+
 function resetApp() {
-    showNotification('This function is disabled in server mode.', 'info');
+    if (confirm('Apakah Anda yakin ingin mereset aplikasi? Ini akan menghapus semua data transaksi.')) {
+        clearAllData();
+    }
 }
+
+// These functions are no longer relevant in the PHP/MySQL version
 function testConnection() {
-    showNotification('This function is disabled in server mode.', 'info');
+    showNotification('Fungsi ini tidak relevan untuk versi server.', 'info');
 }
 function syncData() {
-     showNotification('This function is disabled in server mode.', 'info');
+     showNotification('Fungsi ini tidak relevan untuk versi server.', 'info');
+}
+function loadDataFromCloud() {
+     showNotification('Fungsi ini tidak relevan untuk versi server.', 'info');
 }
