@@ -1,13 +1,3 @@
-// --- GLOBAL CONFIGURATION ---
-const API_BASE_URL = 'api/';
-const AUTH_API_URL = {
-    LOGIN: `${API_BASE_URL}login.php`,
-    REGISTER: `${API_BASE_URL}register.php`,
-    LOGOUT: `${API_BASE_URL}logout.php`,
-    CHECK: `${API_BASE_URL}auth_check.php`
-};
-const DATA_API_URL = `${API_BASE_URL}handler.php`;
-
 // --- GLOBAL STATE ---
 var transactions = [];
 var filteredTransactions = [];
@@ -49,30 +39,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// --- AUTHENTICATION LOGIC ---
+// --- AUTHENTICATION LOGIC (Supabase) ---
 
 async function checkAuth(isDashboard) {
-    try {
-        const response = await fetch(AUTH_API_URL.CHECK);
-        const result = await response.json();
+    const { data: { session } } = await supabase.auth.getSession();
 
-        if (isDashboard) {
-            if (!result.success) {
-                window.location.href = 'index.html'; // Not logged in, redirect to login
-            } else {
-                // User is authenticated, proceed to load dashboard data
-                initializeDashboard();
-            }
+    if (isDashboard) {
+        if (!session) {
+            // Not logged in, redirect to login
+            window.location.href = 'index.html';
         } else {
-            // On login/register page
-            if (result.success) {
-                window.location.href = 'dashboard.html'; // Already logged in, redirect to dashboard
-            }
+            // User is authenticated, proceed to load dashboard data
+            initializeDashboard();
         }
-    } catch (error) {
-        console.error("Auth check failed:", error);
-        if (isDashboard) {
-            window.location.href = 'index.html'; // Failsafe redirect
+    } else {
+        // On login/register page
+        if (session) {
+            // Already logged in, redirect to dashboard
+            window.location.href = 'dashboard.html';
         }
     }
 }
@@ -82,24 +66,19 @@ async function handleLogin(e) {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
 
-    try {
-        const response = await fetch(AUTH_API_URL.LOGIN, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-        });
-        const result = await response.json();
+    // We'll use the username as the email for Supabase auth
+    const { error } = await supabase.auth.signInWithPassword({
+        email: username,
+        password: password,
+    });
 
-        if (result.success) {
-            showNotification('Login berhasil! Mengarahkan ke dashboard...', 'success');
-            setTimeout(() => {
-                window.location.href = 'dashboard.html';
-            }, 1500);
-        } else {
-            showNotification(result.message || 'Login gagal.', 'error');
-        }
-    } catch (error) {
-        showNotification('Terjadi kesalahan. Periksa koneksi Anda.', 'error');
+    if (error) {
+        showNotification(error.message, 'error');
+    } else {
+        showNotification('Login berhasil! Mengarahkan ke dashboard...', 'success');
+        setTimeout(() => {
+            window.location.href = 'dashboard.html';
+        }, 1500);
     }
 }
 
@@ -108,43 +87,34 @@ async function handleRegister(e) {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
 
-    try {
-        const response = await fetch(AUTH_API_URL.REGISTER, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-        });
-        const result = await response.json();
+    const { data, error } = await supabase.auth.signUp({
+        email: username, // Using username as email
+        password: password
+    });
 
-        if (result.success) {
-            showNotification('Registrasi berhasil! Silakan login.', 'success');
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1500);
-        } else {
-            showNotification(result.message || 'Registrasi gagal.', 'error');
-        }
-    } catch (error) {
-        showNotification('Terjadi kesalahan. Periksa koneksi Anda.', 'error');
+    if (error) {
+        showNotification(error.message, 'error');
+    } else if (data.user && data.user.identities && data.user.identities.length === 0) {
+        showNotification('Registrasi gagal: Pengguna dengan email ini sudah ada.', 'error');
+    }
+    else {
+        showNotification('Registrasi berhasil! Silakan periksa email Anda untuk verifikasi.', 'success');
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 2000);
     }
 }
 
 async function logout() {
     if (confirm('Apakah Anda yakin ingin keluar?')) {
-        try {
-            const response = await fetch(AUTH_API_URL.LOGOUT);
-            const result = await response.json();
-            if (result.success) {
-                showNotification('Anda telah keluar.', 'info');
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1000);
-            } else {
-                showNotification('Logout gagal. Silakan coba lagi.', 'error');
-            }
-        } catch (error) {
-            console.error("Logout error:", error);
-            showNotification('Terjadi kesalahan saat logout.', 'error');
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            showNotification('Logout gagal: ' + error.message, 'error');
+        } else {
+            showNotification('Anda telah keluar.', 'info');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1000);
         }
     }
 }
@@ -179,31 +149,34 @@ function initializeDashboard() {
 // --- SERVER COMMUNICATION (DATA) ---
 
 async function loadDataFromServer() {
-    try {
-        const response = await fetch(DATA_API_URL, { method: 'GET' });
-        if (response.status === 401) { // Unauthorized
-            window.location.href = 'index.html';
-            return;
-        }
-        const result = await response.json();
+    const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .order('date', { ascending: false });
 
-        if (result.success) {
-            transactions = result.data;
-            updateAllDisplays();
-            showNotification('Data berhasil dimuat! 💻', 'success');
-        } else {
-            showNotification(`Error loading data: ${result.message}`, 'error');
+    if (error) {
+        showNotification(`Error loading data: ${error.message}`, 'error');
+        if (error.code === '42P01') { // undefined_table
+             showNotification("Tabel 'transactions' tidak ditemukan. Apakah Anda sudah menjalankan skema SQL di Supabase?", 'error');
         }
-    } catch (error) {
-        showNotification('Tidak dapat terhubung ke server.', 'error');
-        console.error('Fetch error:', error);
+    } else {
+        transactions = data;
+        updateAllDisplays();
+        showNotification('Data berhasil dimuat! 💻', 'success');
     }
 }
 
 async function addTransaction(e) {
     e.preventDefault();
     
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        showNotification('Error: Anda harus login untuk menambahkan transaksi.', 'error');
+        return;
+    }
+
     const newTransaction = {
+        user_id: user.id,
         type: document.getElementById('transaction-type').value,
         amount: parseFloat(document.getElementById('transaction-amount').value),
         category: document.getElementById('transaction-category').value,
@@ -211,27 +184,19 @@ async function addTransaction(e) {
         description: document.getElementById('transaction-description').value
     };
     
-    try {
-        const response = await fetch(DATA_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'add', data: newTransaction })
-        });
-        const result = await response.json();
+    const { error } = await supabase
+        .from('transactions')
+        .insert([newTransaction]);
 
-        if (result.success) {
-            // No need to push, loadDataFromServer will get the latest state
-            await loadDataFromServer();
-            document.getElementById('transaction-form').reset();
-            document.getElementById('transaction-date').value = new Date().toISOString().split('T')[0];
-            setTransactionType('pemasukan');
-            showNotification('Transaksi berhasil ditambahkan! 🎉', 'success');
-            showTab('dashboard');
-        } else {
-            showNotification(`Error: ${result.message}`, 'error');
-        }
-    } catch (error) {
-        showNotification('Gagal menambahkan transaksi. Periksa koneksi server.', 'error');
+    if (error) {
+        showNotification(`Error: ${error.message}`, 'error');
+    } else {
+        await loadDataFromServer();
+        document.getElementById('transaction-form').reset();
+        document.getElementById('transaction-date').value = new Date().toISOString().split('T')[0];
+        setTransactionType('pemasukan');
+        showNotification('Transaksi berhasil ditambahkan! 🎉', 'success');
+        showTab('dashboard');
     }
 }
 
@@ -240,7 +205,7 @@ async function updateTransaction(e) {
     
     const id = parseInt(document.getElementById('edit-id').value);
     const updatedTransaction = {
-        id: id,
+        // user_id is not needed here due to RLS policies
         type: document.getElementById('edit-type').value,
         amount: parseFloat(document.getElementById('edit-amount').value),
         category: document.getElementById('edit-category').value,
@@ -248,23 +213,17 @@ async function updateTransaction(e) {
         description: document.getElementById('edit-description').value
     };
 
-    try {
-        const response = await fetch(DATA_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'update', data: updatedTransaction })
-        });
-        const result = await response.json();
+    const { error } = await supabase
+        .from('transactions')
+        .update(updatedTransaction)
+        .match({ id: id });
 
-        if (result.success) {
-            closeEditModal();
-            showNotification('Transaksi berhasil diperbarui! ✨', 'success');
-            await loadDataFromServer();
-        } else {
-            showNotification(`Gagal memperbarui: ${result.message}`, 'error');
-        }
-    } catch (error) {
-        showNotification('Gagal memperbarui. Periksa koneksi server.', 'error');
+    if (error) {
+        showNotification(`Gagal memperbarui: ${error.message}`, 'error');
+    } else {
+        closeEditModal();
+        showNotification('Transaksi berhasil diperbarui! ✨', 'success');
+        await loadDataFromServer();
     }
 }
 
@@ -273,22 +232,16 @@ async function deleteTransaction(id) {
         return;
     }
 
-    try {
-        const response = await fetch(DATA_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'delete', id: id })
-        });
-        const result = await response.json();
+    const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .match({ id: id });
 
-        if (result.success) {
-            showNotification('Transaksi berhasil dihapus! 🗑️', 'success');
-            await loadDataFromServer();
-        } else {
-            showNotification(`Gagal menghapus: ${result.message}`, 'error');
-        }
-    } catch (error) {
-        showNotification('Gagal menghapus. Periksa koneksi server.', 'error');
+    if (error) {
+        showNotification(`Gagal menghapus: ${error.message}`, 'error');
+    } else {
+        showNotification('Transaksi berhasil dihapus! 🗑️', 'success');
+        await loadDataFromServer();
     }
 }
 
@@ -704,21 +657,17 @@ function addGlobalStyles() {
 
 async function clearAllData() {
     if (confirm('APAKAH ANDA YAKIN? Semua data transaksi Anda akan dihapus permanen.')) {
-        try {
-            const response = await fetch(DATA_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'clear' })
-            });
-            const result = await response.json();
-            if (result.success) {
-                await loadDataFromServer();
-                showNotification('Semua data berhasil dihapus! 🧹', 'success');
-            } else {
-                showNotification(`Error: ${result.message}`, 'error');
-            }
-        } catch (error) {
-            showNotification('Gagal menghapus data. Periksa koneksi server.', 'error');
+        // RLS policy will ensure only the user's own data is deleted.
+        const { error } = await supabase
+            .from('transactions')
+            .delete()
+            .neq('id', -1); // Dummy condition to delete all matched rows by RLS
+
+        if (error) {
+            showNotification(`Error: ${error.message}`, 'error');
+        } else {
+            await loadDataFromServer();
+            showNotification('Semua data berhasil dihapus! 🧹', 'success');
         }
     }
 }
@@ -752,23 +701,30 @@ function importData() {
                 const importedData = JSON.parse(event.target.result);
                 if (!Array.isArray(importedData)) throw new Error("Format JSON tidak valid.");
 
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) throw new Error("Anda harus login untuk mengimpor data.");
+
                 if (confirm('Hapus data lama sebelum mengimpor?')) {
                     await clearAllData();
                 }
 
-                const response = await fetch(DATA_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'batch_add', data: importedData })
-                });
-                const result = await response.json();
+                // Add user_id to each transaction and remove any existing id
+                const dataToInsert = importedData.map(({ id, ...t }) => ({
+                    ...t,
+                    user_id: user.id
+                }));
 
-                if (result.success) {
-                    await loadDataFromServer();
-                    showNotification('Data berhasil diimpor! 🚀', 'success');
-                } else {
-                    showNotification(`Error: ${result.message}`, 'error');
+                const { error } = await supabase
+                    .from('transactions')
+                    .insert(dataToInsert);
+
+                if (error) {
+                    throw error;
                 }
+
+                await loadDataFromServer();
+                showNotification('Data berhasil diimpor! 🚀', 'success');
+
             } catch (error) {
                 showNotification(`Gagal impor: ${error.message}`, 'error');
             }
