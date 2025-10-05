@@ -71,8 +71,8 @@
                         <div>
                             <p class="text-gray-600 text-sm font-medium">Saldo Saat Ini</p>
                             <p class="text-xl sm:text-2xl font-bold text-gray-800 mt-1" id="current-balance">Rp 0</p>
-                            <p class="text-xs text-green-600 mt-1">
-                                <i class="fas fa-arrow-up mr-1"></i>+2.5% dari bulan lalu
+                            <p class="text-xs text-gray-500 mt-1" id="current-balance-percentage">
+                                <i class="fas fa-info-circle mr-1"></i>Menunggu data...
                             </p>
                         </div>
                         <div class="gradient-success p-4 rounded-2xl">
@@ -86,8 +86,8 @@
                         <div>
                             <p class="text-gray-600 text-sm font-medium">Pemasukan Bulan Ini</p>
                             <p class="text-xl sm:text-2xl font-bold text-gray-800 mt-1" id="monthly-income">Rp 0</p>
-                            <p class="text-xs text-blue-600 mt-1">
-                                <i class="fas fa-arrow-up mr-1"></i>Target: 85%
+                            <p class="text-xs text-gray-500 mt-1" id="monthly-income-percentage">
+                                <i class="fas fa-info-circle mr-1"></i>Menunggu data...
                             </p>
                         </div>
                         <div class="gradient-primary p-3 sm:p-4 rounded-2xl">
@@ -101,8 +101,8 @@
                         <div>
                             <p class="text-gray-600 text-sm font-medium">Pengeluaran Bulan Ini</p>
                             <p class="text-xl sm:text-2xl font-bold text-gray-800 mt-1" id="monthly-expense">Rp 0</p>
-                            <p class="text-xs text-red-600 mt-1">
-                                <i class="fas fa-arrow-down mr-1"></i>-5.2% dari bulan lalu
+                            <p class="text-xs text-gray-500 mt-1" id="monthly-expense-percentage">
+                                <i class="fas fa-info-circle mr-1"></i>Menunggu data...
                             </p>
                         </div>
                         <div class="gradient-secondary p-3 sm:p-4 rounded-2xl">
@@ -165,19 +165,19 @@
                         <div>
                             <div class="flex justify-between text-sm mb-1">
                                 <span>Pengeluaran</span>
-                                <span>75%</span>
+                                <span id="expense-target-percentage">0%</span>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="gradient-secondary h-2 rounded-full" style="width: 75%"></div>
+                                <div id="expense-target-bar" class="gradient-secondary h-2 rounded-full" style="width: 0%"></div>
                             </div>
                         </div>
                         <div>
                             <div class="flex justify-between text-sm mb-1">
                                 <span>Tabungan</span>
-                                <span>60%</span>
+                                <span id="savings-target-percentage">0%</span>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="gradient-success h-2 rounded-full" style="width: 60%"></div>
+                                <div id="savings-target-bar" class="gradient-success h-2 rounded-full" style="width: 0%"></div>
                             </div>
                         </div>
                     </div>

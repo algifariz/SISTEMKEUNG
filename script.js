@@ -230,6 +230,7 @@ function updateDashboard() {
         }, { income: 0, expense: 0 });
     };
 
+    // --- Calculations ---
     const overallTotals = calculateTotals(transactions);
     const currentBalance = overallTotals.income - overallTotals.expense;
 
@@ -239,42 +240,72 @@ function updateDashboard() {
     });
     const monthlyTotals = calculateTotals(currentMonthTransactions);
 
+    const prevMonthTransactions = transactions.filter(t => {
+        const d = new Date(t.date);
+        return d.getMonth() === prevMonth && d.getFullYear() === prevYear;
+    });
+    const prevMonthTotals = calculateTotals(prevMonthTransactions);
+
     const transactionsUntilLastMonth = transactions.filter(t => new Date(t.date) < new Date(currentYear, currentMonth, 1));
     const totalsUntilLastMonth = calculateTotals(transactionsUntilLastMonth);
     const balanceAtEndOfLastMonth = totalsUntilLastMonth.income - totalsUntilLastMonth.expense;
     
+    // --- Update Main Stats ---
     document.getElementById('current-balance').textContent = formatCurrency(currentBalance);
     document.getElementById('hero-balance').textContent = formatCurrency(currentBalance);
     document.getElementById('monthly-income').textContent = formatCurrency(monthlyTotals.income);
     document.getElementById('monthly-expense').textContent = formatCurrency(monthlyTotals.expense);
     document.getElementById('total-transactions').textContent = transactions.length;
     
-    const percentageChangeElement = document.querySelector('#current-balance + .text-xs');
-    const hasLastMonthData = transactions.some(t => {
-        const d = new Date(t.date);
-        return d.getMonth() === prevMonth && d.getFullYear() === prevYear;
-    });
+    // --- Update Percentage Changes ---
+    const updatePercentage = (elementId, currentValue, prevValue, higherIsBetter) => {
+        const element = document.getElementById(elementId);
+        if (prevValue === 0 && currentValue === 0) {
+            element.className = 'text-xs text-gray-500 mt-1';
+            element.innerHTML = `<i class="fas fa-info-circle mr-1"></i>Data bulan lalu tidak tersedia`;
+            return;
+        }
 
-    if (hasLastMonthData) {
         let percentageChange = 0;
-        if (balanceAtEndOfLastMonth !== 0) {
-            percentageChange = ((currentBalance - balanceAtEndOfLastMonth) / Math.abs(balanceAtEndOfLastMonth)) * 100;
-        } else if (currentBalance !== 0) {
+        if (prevValue !== 0) {
+            percentageChange = ((currentValue - prevValue) / Math.abs(prevValue)) * 100;
+        } else if (currentValue !== 0) {
             percentageChange = 100;
         }
 
-        const isPositiveChange = currentBalance >= balanceAtEndOfLastMonth;
+        const isPositive = (higherIsBetter && percentageChange >= 0) || (!higherIsBetter && percentageChange <= 0);
+        const isNeutral = percentageChange === 0;
         const absPercentageChange = Math.abs(percentageChange).toFixed(1);
-        const icon = isPositiveChange ? 'fa-arrow-up' : 'fa-arrow-down';
-        const color = isPositiveChange ? 'text-green-600' : 'text-red-600';
-        const text = isPositiveChange ? `+${absPercentageChange}% dari bulan lalu` : `-${absPercentageChange}% dari bulan lalu`;
 
-        percentageChangeElement.className = `text-xs ${color} mt-1`;
-        percentageChangeElement.innerHTML = `<i class="fas ${icon} mr-1"></i>${text}`;
-    } else {
-        percentageChangeElement.className = 'text-xs text-gray-500 mt-1';
-        percentageChangeElement.innerHTML = 'Data bulan lalu tidak tersedia';
-    }
+        let icon, color, text;
+        if (isNeutral) {
+            icon = 'fa-minus';
+            color = 'text-gray-500';
+            text = `Sama seperti bulan lalu`;
+        } else {
+            icon = percentageChange > 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+            color = isPositive ? 'text-green-600' : 'text-red-600';
+            text = `${percentageChange > 0 ? '+' : ''}${percentageChange.toFixed(1)}% dari bulan lalu`;
+        }
+
+        element.className = `text-xs ${color} mt-1`;
+        element.innerHTML = `<i class="fas ${icon} mr-1"></i>${text}`;
+    };
+
+    updatePercentage('current-balance-percentage', currentBalance, balanceAtEndOfLastMonth, true);
+    updatePercentage('monthly-income-percentage', monthlyTotals.income, prevMonthTotals.income, true);
+    updatePercentage('monthly-expense-percentage', monthlyTotals.expense, prevMonthTotals.expense, false); // Lower expense is better
+
+    // --- Update Monthly Targets ---
+    const expenseTargetPercent = monthlyTotals.income > 0 ? (monthlyTotals.expense / monthlyTotals.income) * 100 : 0;
+    const savingsTargetPercent = monthlyTotals.income > 0 ? ((monthlyTotals.income - monthlyTotals.expense) / monthlyTotals.income) * 100 : 0;
+
+    document.getElementById('expense-target-percentage').textContent = `${expenseTargetPercent.toFixed(0)}%`;
+    document.getElementById('expense-target-bar').style.width = `${Math.min(expenseTargetPercent, 100)}%`;
+
+    document.getElementById('savings-target-percentage').textContent = `${savingsTargetPercent.toFixed(0)}%`;
+    document.getElementById('savings-target-bar').style.width = `${Math.max(savingsTargetPercent, 0)}%`;
+
 
     updateCharts();
 }
