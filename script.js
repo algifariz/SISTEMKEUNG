@@ -1,8 +1,11 @@
 // Global variables
-let transactions = [];
-let currentChart = null;
-let reportChart = null;
-let categoryChart = null;
+var transactions = [];
+var filteredTransactions = [];
+var currentPage = 1;
+const rowsPerPage = 10;
+var currentChart = null;
+var reportChart = null;
+var categoryChart = null;
 
 // API URL
 const API_URL = 'api/handler.php';
@@ -211,7 +214,7 @@ async function deleteTransaction(id) {
 
 function updateAllDisplays() {
     updateDashboard();
-    updateTransactionsTable();
+    filterTransactions();
     updateRecentTransactions();
 }
 
@@ -350,20 +353,27 @@ function updateCharts() {
 
 function updateRecentTransactions() {
     const container = document.getElementById('recent-transactions');
-    const recent = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+
+    // Sort transactions by date in descending order and take the latest 5
+    const recent = [...transactions]
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .slice(0, 5);
     
     if (recent.length === 0) {
         container.innerHTML = '<p class="text-gray-500 text-sm">Belum ada transaksi</p>';
         return;
     }
     
+    // Generate the HTML for the 5 recent transactions
     container.innerHTML = recent.map(t => `
-        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+        <div class="flex items-center justify-between p-3 bg-gray-50/50 rounded-xl hover:bg-gray-100 transition-colors">
             <div class="flex items-center">
-                <div class="w-2 h-2 rounded-full ${t.type === 'pemasukan' ? 'bg-green-500' : 'bg-red-500'} mr-3"></div>
+                <div class="p-2 rounded-full mr-3 ${t.type === 'pemasukan' ? 'bg-green-100' : 'bg-red-100'}">
+                    <i class="fas ${t.type === 'pemasukan' ? 'fa-arrow-up text-green-600' : 'fa-arrow-down text-red-600'}"></i>
+                </div>
                 <div>
                     <p class="text-sm font-medium text-gray-800">${getCategoryDisplayName(t.category)}</p>
-                    <p class="text-xs text-gray-500">${new Date(t.date).toLocaleDateString('id-ID')}</p>
+                    <p class="text-xs text-gray-500">${new Date(t.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                 </div>
             </div>
             <span class="text-sm font-semibold ${t.type === 'pemasukan' ? 'text-green-600' : 'text-red-600'}">
@@ -373,19 +383,23 @@ function updateRecentTransactions() {
     `).join('');
 }
 
-function updateTransactionsTable() {
+function displayTransactions() {
     const tbody = document.getElementById('transactions-table');
     tbody.innerHTML = '';
-    
-    if (transactions.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-gray-500">Belum ada transaksi</td></tr>`;
+
+    if (filteredTransactions.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-gray-500">Tidak ada transaksi yang cocok dengan kriteria Anda.</td></tr>`;
+        setupPagination(0, 0); // Clear pagination
         return;
     }
-    
-    const sorted = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    sorted.forEach(t => {
+
+    const startIndex = (currentPage - 1) * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    const paginatedItems = filteredTransactions.slice(startIndex, endIndex);
+
+    paginatedItems.forEach(t => {
         const row = document.createElement('tr');
+        row.className = "hover:bg-gray-50/50 transition-colors";
         row.innerHTML = `
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">${new Date(t.date).toLocaleDateString('id-ID')}</td>
             <td class="px-6 py-4 whitespace-nowrap">
@@ -397,33 +411,80 @@ function updateTransactionsTable() {
             <td class="px-6 py-4 whitespace-nowrap text-sm font-bold ${t.type === 'pemasukan' ? 'text-green-600' : 'text-red-600'}">
                 ${t.type === 'pemasukan' ? '+' : '-'}${formatCurrency(t.amount)}
             </td>
-            <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">${t.description || '-'}</td>
+            <td class="px-6 py-4 text-sm text-gray-900 max-w-xs truncate" title="${t.description || ''}">${t.description || '-'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button onclick="editTransaction(${t.id})" class="text-indigo-600 hover:text-indigo-900 mr-4 p-2 rounded-lg hover:bg-indigo-50 transition-colors"><i class="fas fa-edit"></i></button>
-                <button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900 p-2 rounded-lg hover:bg-red-50 transition-colors"><i class="fas fa-trash"></i></button>
+                <button onclick="editTransaction(${t.id})" class="text-indigo-600 hover:text-indigo-900 mr-4 p-2 rounded-lg hover:bg-indigo-50 transition-colors" title="Edit"><i class="fas fa-edit"></i></button>
+                <button onclick="deleteTransaction(${t.id})" class="text-red-600 hover:text-red-900 p-2 rounded-lg hover:bg-red-50 transition-colors" title="Hapus"><i class="fas fa-trash"></i></button>
             </td>
         `;
         tbody.appendChild(row);
     });
+
+    setupPagination(filteredTransactions.length, Math.ceil(filteredTransactions.length / rowsPerPage));
+}
+
+function setupPagination(totalItems, totalPages) {
+    const paginationContainer = document.getElementById('pagination-controls');
+    paginationContainer.innerHTML = ''; // Clear previous content
+
+    if (totalItems === 0) {
+        return; // Do not display anything if there are no items
+    }
+
+    // Always display the status text
+    const statusSpan = document.createElement('span');
+    statusSpan.className = 'text-sm text-gray-700';
+    statusSpan.innerHTML = `
+        Menampilkan <span class="font-semibold">${Math.min((currentPage - 1) * rowsPerPage + 1, totalItems)}</span>
+        sampai <span class="font-semibold">${Math.min(currentPage * rowsPerPage, totalItems)}</span>
+        dari <span class="font-semibold">${totalItems}</span> hasil`;
+    paginationContainer.appendChild(statusSpan);
+
+    // Only display buttons if there is more than one page
+    if (totalPages > 1) {
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.className = 'inline-flex mt-2 xs:mt-0';
+        buttonsDiv.innerHTML = `
+            <button onclick="changePage(${currentPage - 1})" class="px-4 py-2 text-sm font-medium text-white bg-indigo-500 rounded-l hover:bg-indigo-600 disabled:bg-gray-300 disabled:cursor-not-allowed" ${currentPage === 1 ? 'disabled' : ''}>
+                <i class="fas fa-arrow-left mr-2"></i>Prev
+            </button>
+            <button onclick="changePage(${currentPage + 1})" class="px-4 py-2 text-sm font-medium text-white bg-indigo-500 rounded-r border-0 border-l border-indigo-600 hover:bg-indigo-600 disabled:bg-gray-300 disabled:cursor-not-allowed" ${currentPage === totalPages ? 'disabled' : ''}>
+                Next<i class="fas fa-arrow-right ml-2"></i>
+            </button>
+        `;
+        paginationContainer.appendChild(buttonsDiv);
+    }
+}
+
+function changePage(page) {
+    const totalPages = Math.ceil(filteredTransactions.length / rowsPerPage);
+    if (page < 1 || page > totalPages) return;
+    currentPage = page;
+    displayTransactions();
 }
 
 function filterTransactions() {
     const searchTerm = document.getElementById('search-transactions').value.toLowerCase();
     const filterType = document.getElementById('filter-type').value;
-    
-    const filtered = transactions.filter(t => {
-        const matchesSearch = t.description.toLowerCase().includes(searchTerm) || t.category.toLowerCase().includes(searchTerm);
+
+    // Filter transactions
+    let tempFiltered = transactions.filter(t => {
+        const description = t.description || '';
+        const category = t.category || '';
+        const matchesSearch = description.toLowerCase().includes(searchTerm) ||
+                              getCategoryDisplayName(category).toLowerCase().includes(searchTerm);
         const matchesType = !filterType || t.type === filterType;
         return matchesSearch && matchesType;
     });
+
+    // Sort the filtered transactions by date
+    tempFiltered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    filteredTransactions = tempFiltered;
     
-    // This is a simplified update. Ideally, you'd have a function to render a list of transactions.
-    // For now, we'll just log the result. A full implementation would update the table.
-    console.log('Filtered transactions:', filtered);
-    // To make this fully functional, you'd call a function here like:
-    // renderTransactionsTable(filtered);
-    // For the purpose of this refactor, we'll keep it simple.
-    // The main `updateTransactionsTable` will always show all transactions.
+    // Reset to the first page whenever a filter is applied
+    currentPage = 1;
+    displayTransactions();
 }
 
 // --- REPORTING ---
@@ -523,10 +584,18 @@ function getCategoryDisplayName(key) {
 }
 
 function formatCurrency(amount) {
+    const num = parseFloat(amount);
+    if (isNaN(num)) {
+        amount = 0;
+    }
+    // Use the built-in 'currency' style with 'IDR' to get the "Rp" prefix
+    // and the correct dot separators for thousands.
+    // The `replace(/,00$/, '')` removes the trailing ",00" for whole numbers.
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',
-        minimumFractionDigits: 0
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
     }).format(amount);
 }
 
