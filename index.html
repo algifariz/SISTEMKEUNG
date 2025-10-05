@@ -13,14 +13,14 @@
 <body class="bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen">
     <!-- Hero Header -->
     <header class="hero-bg text-white relative">
-        <div class="container mx-auto px-6 py-12">
-            <div class="flex items-center justify-between">
-                <div class="animate-slide-up">
-                    <h1 class="text-4xl md:text-5xl font-bold mb-2 relative z-10">
-                        <i class="fas fa-coins mr-4 text-yellow-300"></i>
+        <div class="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+            <div class="flex flex-col sm:flex-row items-center justify-between">
+                <div class="animate-slide-up text-center sm:text-left mb-6 sm:mb-0">
+                    <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-2 relative z-10">
+                        <i class="fas fa-coins mr-2 sm:mr-4 text-yellow-300"></i>
                         MoneyTracker
                     </h1>
-                    <p class="text-xl text-indigo-100 relative z-10">Kelola keuangan keluarga dengan elegan dan mudah</p>
+                    <p class="text-lg sm:text-xl text-indigo-100 relative z-10">Kelola keuangan dengan elegan</p>
                 </div>
                 <div class="hidden md:block animate-fade-in">
                     <div class="glass-effect rounded-2xl p-6">
@@ -40,37 +40,37 @@
 
     <!-- Navigation -->
     <nav class="sidebar-blur sticky top-0 z-40 border-b border-white/20">
-        <div class="container mx-auto px-6">
-            <div class="flex space-x-1 overflow-x-auto py-4">
-                <button onclick="showTab('dashboard')" class="tab-elegant active px-6 py-3 font-medium text-indigo-600 transition-all duration-300" id="tab-dashboard">
-                    <i class="fas fa-chart-pie mr-2"></i>Dashboard
+        <div class="container mx-auto px-4 sm:px-6">
+            <div class="flex space-x-2 overflow-x-auto py-3 sm:py-4">
+                <button onclick="showTab('dashboard')" class="tab-elegant active px-4 py-2 sm:px-6 sm:py-3 font-medium text-indigo-600 transition-all duration-300 flex-1 sm:flex-none flex items-center justify-center" id="tab-dashboard">
+                    <i class="fas fa-chart-pie sm:mr-2"></i><span class="hidden sm:inline">Dashboard</span>
                 </button>
-                <button onclick="showTab('transaksi')" class="tab-elegant px-6 py-3 font-medium text-gray-600 hover:text-indigo-600 transition-all duration-300" id="tab-transaksi">
-                    <i class="fas fa-plus-circle mr-2"></i>Transaksi
+                <button onclick="showTab('transaksi')" class="tab-elegant px-4 py-2 sm:px-6 sm:py-3 font-medium text-gray-600 hover:text-indigo-600 transition-all duration-300 flex-1 sm:flex-none flex items-center justify-center" id="tab-transaksi">
+                    <i class="fas fa-plus-circle sm:mr-2"></i><span class="hidden sm:inline">Transaksi</span>
                 </button>
-                <button onclick="showTab('riwayat')" class="tab-elegant px-6 py-3 font-medium text-gray-600 hover:text-indigo-600 transition-all duration-300" id="tab-riwayat">
-                    <i class="fas fa-history mr-2"></i>Riwayat
+                <button onclick="showTab('riwayat')" class="tab-elegant px-4 py-2 sm:px-6 sm:py-3 font-medium text-gray-600 hover:text-indigo-600 transition-all duration-300 flex-1 sm:flex-none flex items-center justify-center" id="tab-riwayat">
+                    <i class="fas fa-history sm:mr-2"></i><span class="hidden sm:inline">Riwayat</span>
                 </button>
-                <button onclick="showTab('laporan')" class="tab-elegant px-6 py-3 font-medium text-gray-600 hover:text-indigo-600 transition-all duration-300" id="tab-laporan">
-                    <i class="fas fa-chart-bar mr-2"></i>Laporan
+                <button onclick="showTab('laporan')" class="tab-elegant px-4 py-2 sm:px-6 sm:py-3 font-medium text-gray-600 hover:text-indigo-600 transition-all duration-300 flex-1 sm:flex-none flex items-center justify-center" id="tab-laporan">
+                    <i class="fas fa-chart-bar sm:mr-2"></i><span class="hidden sm:inline">Laporan</span>
                 </button>
-                <button onclick="showTab('pengaturan')" class="tab-elegant px-6 py-3 font-medium text-gray-600 hover:text-indigo-600 transition-all duration-300" id="tab-pengaturan">
-                    <i class="fas fa-cog mr-2"></i>Pengaturan
+                <button onclick="showTab('pengaturan')" class="tab-elegant px-4 py-2 sm:px-6 sm:py-3 font-medium text-gray-600 hover:text-indigo-600 transition-all duration-300 flex-1 sm:flex-none flex items-center justify-center" id="tab-pengaturan">
+                    <i class="fas fa-cog sm:mr-2"></i><span class="hidden sm:inline">Pengaturan</span>
                 </button>
             </div>
         </div>
     </nav>
 
-    <div class="container mx-auto px-6 py-8">
+    <div class="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <!-- Dashboard Tab -->
         <div id="dashboard-content" class="tab-content animate-fade-in">
             <!-- Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="stats-card rounded-2xl p-6 animate-scale-in" style="animation-delay: 0.1s">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+                <div class="stats-card rounded-2xl p-4 sm:p-6 animate-scale-in" style="animation-delay: 0.1s">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-gray-600 text-sm font-medium">Saldo Saat Ini</p>
-                            <p class="text-2xl font-bold text-gray-800 mt-1" id="current-balance">Rp 0</p>
+                            <p class="text-xl sm:text-2xl font-bold text-gray-800 mt-1" id="current-balance">Rp 0</p>
                             <p class="text-xs text-green-600 mt-1">
                                 <i class="fas fa-arrow-up mr-1"></i>+2.5% dari bulan lalu
                             </p>
@@ -81,41 +81,41 @@
                     </div>
                 </div>
                 
-                <div class="stats-card rounded-2xl p-6 animate-scale-in" style="animation-delay: 0.2s">
+                <div class="stats-card rounded-2xl p-4 sm:p-6 animate-scale-in" style="animation-delay: 0.2s">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-gray-600 text-sm font-medium">Pemasukan Bulan Ini</p>
-                            <p class="text-2xl font-bold text-gray-800 mt-1" id="monthly-income">Rp 0</p>
+                            <p class="text-xl sm:text-2xl font-bold text-gray-800 mt-1" id="monthly-income">Rp 0</p>
                             <p class="text-xs text-blue-600 mt-1">
                                 <i class="fas fa-arrow-up mr-1"></i>Target: 85%
                             </p>
                         </div>
-                        <div class="gradient-primary p-4 rounded-2xl">
-                            <i class="fas fa-arrow-trend-up text-white text-xl"></i>
+                        <div class="gradient-primary p-3 sm:p-4 rounded-2xl">
+                            <i class="fas fa-arrow-trend-up text-white text-lg sm:text-xl"></i>
                         </div>
                     </div>
                 </div>
                 
-                <div class="stats-card rounded-2xl p-6 animate-scale-in" style="animation-delay: 0.3s">
+                <div class="stats-card rounded-2xl p-4 sm:p-6 animate-scale-in" style="animation-delay: 0.3s">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-gray-600 text-sm font-medium">Pengeluaran Bulan Ini</p>
-                            <p class="text-2xl font-bold text-gray-800 mt-1" id="monthly-expense">Rp 0</p>
+                            <p class="text-xl sm:text-2xl font-bold text-gray-800 mt-1" id="monthly-expense">Rp 0</p>
                             <p class="text-xs text-red-600 mt-1">
                                 <i class="fas fa-arrow-down mr-1"></i>-5.2% dari bulan lalu
                             </p>
                         </div>
-                        <div class="gradient-secondary p-4 rounded-2xl">
-                            <i class="fas fa-arrow-trend-down text-white text-xl"></i>
+                        <div class="gradient-secondary p-3 sm:p-4 rounded-2xl">
+                            <i class="fas fa-arrow-trend-down text-white text-lg sm:text-xl"></i>
                         </div>
                     </div>
                 </div>
                 
-                <div class="stats-card rounded-2xl p-6 animate-scale-in" style="animation-delay: 0.4s">
+                <div class="stats-card rounded-2xl p-4 sm:p-6 animate-scale-in" style="animation-delay: 0.4s">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-gray-600 text-sm font-medium">Total Transaksi</p>
-                            <p class="text-2xl font-bold text-gray-800 mt-1" id="total-transactions">0</p>
+                            <p class="text-xl sm:text-2xl font-bold text-gray-800 mt-1" id="total-transactions">0</p>
                             <p class="text-xs text-purple-600 mt-1">
                                 <i class="fas fa-list mr-1"></i>Bulan ini
                             </p>
@@ -137,12 +137,16 @@
                             <button class="px-3 py-1 text-xs text-gray-500 rounded-full hover:bg-gray-100">1 Tahun</button>
                         </div>
                     </div>
-                    <canvas id="incomeExpenseChart" height="300"></canvas>
+                    <div class="relative h-64 md:h-80">
+                        <canvas id="incomeExpenseChart"></canvas>
+                    </div>
                 </div>
                 
                 <div class="card-elegant rounded-2xl p-6 animate-slide-up" style="animation-delay: 0.2s">
                     <h3 class="text-xl font-semibold text-gray-800 mb-6">Kategori Pengeluaran</h3>
-                    <canvas id="categoryChart" height="300"></canvas>
+                    <div class="relative h-64 md:h-80">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -346,7 +350,9 @@
                         <!-- Report summary will be populated here -->
                     </div>
                     <div id="report-chart-container" class="mt-6">
-                        <canvas id="reportChart" height="400"></canvas>
+                        <div class="relative h-96">
+                            <canvas id="reportChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -508,9 +514,9 @@
     </div>
 
     <!-- Floating Action Button -->
-    <div class="floating-action">
-        <button onclick="showTab('transaksi')" class="btn-elegant text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform">
-            <i class="fas fa-plus text-xl"></i>
+    <div class="fixed bottom-6 right-6 z-50">
+        <button onclick="showTab('transaksi')" class="btn-elegant text-white w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform">
+            <i class="fas fa-plus text-xl sm:text-2xl"></i>
         </button>
     </div>
 

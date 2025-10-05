@@ -91,13 +91,6 @@ body {
     width: 100%;
 }
 
-.floating-action {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    z-index: 1000;
-}
-
 .sidebar-blur {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px);
