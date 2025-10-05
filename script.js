@@ -46,7 +46,7 @@ function showTab(tabName) {
     activeTab.classList.remove('text-gray-600');
     
     if (tabName === 'dashboard') {
-        setTimeout(updateDashboard, 100);
+        updateDashboard();
     }
 }
 
@@ -215,37 +215,67 @@ function updateDashboard() {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
-    
-    let totalIncome = 0;
-    let totalExpense = 0;
-    let monthlyIncome = 0;
-    let monthlyExpense = 0;
-    
-    transactions.forEach(transaction => {
-        const transactionDate = new Date(transaction.date);
-        const amount = parseFloat(transaction.amount);
-        
-        if (transaction.type === 'pemasukan') {
-            totalIncome += amount;
-            if (transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear) {
-                monthlyIncome += amount;
-            }
-        } else {
-            totalExpense += amount;
-            if (transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear) {
-                monthlyExpense += amount;
-            }
-        }
+
+    const prevMonthDate = new Date(now);
+    prevMonthDate.setMonth(prevMonthDate.getMonth() - 1);
+    const prevMonth = prevMonthDate.getMonth();
+    const prevYear = prevMonthDate.getFullYear();
+
+    const calculateTotals = (filteredTransactions) => {
+        return filteredTransactions.reduce((acc, t) => {
+            const amount = parseFloat(t.amount);
+            if (t.type === 'pemasukan') acc.income += amount;
+            else acc.expense += amount;
+            return acc;
+        }, { income: 0, expense: 0 });
+    };
+
+    const overallTotals = calculateTotals(transactions);
+    const currentBalance = overallTotals.income - overallTotals.expense;
+
+    const currentMonthTransactions = transactions.filter(t => {
+        const d = new Date(t.date);
+        return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
     });
-    
-    const currentBalance = totalIncome - totalExpense;
+    const monthlyTotals = calculateTotals(currentMonthTransactions);
+
+    const transactionsUntilLastMonth = transactions.filter(t => new Date(t.date) < new Date(currentYear, currentMonth, 1));
+    const totalsUntilLastMonth = calculateTotals(transactionsUntilLastMonth);
+    const balanceAtEndOfLastMonth = totalsUntilLastMonth.income - totalsUntilLastMonth.expense;
     
     document.getElementById('current-balance').textContent = formatCurrency(currentBalance);
     document.getElementById('hero-balance').textContent = formatCurrency(currentBalance);
-    document.getElementById('monthly-income').textContent = formatCurrency(monthlyIncome);
-    document.getElementById('monthly-expense').textContent = formatCurrency(monthlyExpense);
+    document.getElementById('monthly-income').textContent = formatCurrency(monthlyTotals.income);
+    document.getElementById('monthly-expense').textContent = formatCurrency(monthlyTotals.expense);
     document.getElementById('total-transactions').textContent = transactions.length;
     
+    const percentageChangeElement = document.querySelector('#current-balance + .text-xs');
+    const hasLastMonthData = transactions.some(t => {
+        const d = new Date(t.date);
+        return d.getMonth() === prevMonth && d.getFullYear() === prevYear;
+    });
+
+    if (hasLastMonthData) {
+        let percentageChange = 0;
+        if (balanceAtEndOfLastMonth !== 0) {
+            percentageChange = ((currentBalance - balanceAtEndOfLastMonth) / Math.abs(balanceAtEndOfLastMonth)) * 100;
+        } else if (currentBalance !== 0) {
+            percentageChange = 100;
+        }
+
+        const isPositiveChange = currentBalance >= balanceAtEndOfLastMonth;
+        const absPercentageChange = Math.abs(percentageChange).toFixed(1);
+        const icon = isPositiveChange ? 'fa-arrow-up' : 'fa-arrow-down';
+        const color = isPositiveChange ? 'text-green-600' : 'text-red-600';
+        const text = isPositiveChange ? `+${absPercentageChange}% dari bulan lalu` : `-${absPercentageChange}% dari bulan lalu`;
+
+        percentageChangeElement.className = `text-xs ${color} mt-1`;
+        percentageChangeElement.innerHTML = `<i class="fas ${icon} mr-1"></i>${text}`;
+    } else {
+        percentageChangeElement.className = 'text-xs text-gray-500 mt-1';
+        percentageChangeElement.innerHTML = 'Data bulan lalu tidak tersedia';
+    }
+
     updateCharts();
 }
 
