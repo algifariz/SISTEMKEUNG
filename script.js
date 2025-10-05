@@ -121,14 +121,25 @@ async function updateTransaction(e) {
     e.preventDefault();
     
     const id = parseInt(document.getElementById('edit-id').value);
+    const index = transactions.findIndex(t => t.id === id);
+    if (index === -1) return;
+
+    const originalTransaction = { ...transactions[index] };
+
     const updatedTransaction = {
-        id: id,
+        ...originalTransaction,
         type: document.getElementById('edit-type').value,
         amount: parseFloat(document.getElementById('edit-amount').value),
         category: document.getElementById('edit-category').value,
         date: document.getElementById('edit-date').value,
         description: document.getElementById('edit-description').value
     };
+
+    // Optimistic UI update
+    transactions[index] = updatedTransaction;
+    updateAllDisplays();
+    closeEditModal();
+    showNotification('Transaksi sedang diperbarui...', 'info');
 
     try {
         const response = await fetch(API_URL, {
@@ -139,41 +150,60 @@ async function updateTransaction(e) {
         const result = await response.json();
 
         if (result.success) {
-            const index = transactions.findIndex(t => t.id === id);
-            if (index !== -1) {
-                transactions[index] = result.data;
-            }
-            updateAllDisplays();
-            closeEditModal();
+            // The server might return slightly different data (e.g., formatted), so we update with the server's response
+            transactions[index] = result.data;
+            updateAllDisplays(); // Update again with final data
             showNotification('Transaksi berhasil diperbarui! ✨', 'success');
         } else {
-            showNotification(`Error: ${result.message}`, 'error');
+            // Revert UI on failure
+            transactions[index] = originalTransaction;
+            updateAllDisplays();
+            showNotification(`Gagal memperbarui: ${result.message}`, 'error');
         }
     } catch (error) {
-        showNotification('Gagal memperbarui transaksi. Periksa koneksi server.', 'error');
+        // Revert UI on network error
+        transactions[index] = originalTransaction;
+        updateAllDisplays();
+        showNotification('Gagal memperbarui. Periksa koneksi server.', 'error');
     }
 }
 
 async function deleteTransaction(id) {
-    if (confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) {
-        try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'delete', id: id })
-            });
-            const result = await response.json();
+    if (!confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) {
+        return;
+    }
 
-            if (result.success) {
-                transactions = transactions.filter(t => t.id !== id);
-                updateAllDisplays();
-                showNotification('Transaksi berhasil dihapus! 🗑️', 'success');
-            } else {
-                showNotification(`Error: ${result.message}`, 'error');
-            }
-        } catch (error) {
-            showNotification('Gagal menghapus transaksi. Periksa koneksi server.', 'error');
+    const index = transactions.findIndex(t => t.id === id);
+    if (index === -1) return;
+
+    const deletedTransaction = transactions[index];
+
+    // Optimistic UI update
+    transactions.splice(index, 1);
+    updateAllDisplays();
+    showNotification('Transaksi sedang dihapus...', 'info');
+
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete', id: id })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            showNotification('Transaksi berhasil dihapus! 🗑️', 'success');
+        } else {
+            // Revert UI on failure
+            transactions.splice(index, 0, deletedTransaction);
+            updateAllDisplays();
+            showNotification(`Gagal menghapus: ${result.message}`, 'error');
         }
+    } catch (error) {
+        // Revert UI on network error
+        transactions.splice(index, 0, deletedTransaction);
+        updateAllDisplays();
+        showNotification('Gagal menghapus. Periksa koneksi server.', 'error');
     }
 }
 
