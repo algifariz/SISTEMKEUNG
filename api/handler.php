@@ -1,4 +1,6 @@
 <?php
+session_start();
+
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST, GET, OPTIONS, DELETE, PUT");
@@ -6,23 +8,30 @@ header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers
 
 require_once 'config.php';
 
-$method = $_SERVER['REQUEST_METHOD'];
-
-if ($method == 'OPTIONS') {
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
     http_response_code(200);
     exit();
 }
 
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit();
+}
+
+$user_id = $_SESSION['id'];
 $response = ['success' => false, 'message' => 'Invalid request'];
+$method = $_SERVER['REQUEST_METHOD'];
 
 if ($method == 'GET') {
-    $sql = "SELECT * FROM transactions ORDER BY date DESC";
-    $result = $conn->query($sql);
+    $stmt = $conn->prepare("SELECT * FROM transactions WHERE user_id = ? ORDER BY date DESC");
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
     if ($result) {
         $transactions = [];
         while ($row = $result->fetch_assoc()) {
-            // Ensure amount is float
             $row['amount'] = (float)$row['amount'];
             $transactions[] = $row;
         }
@@ -30,6 +39,7 @@ if ($method == 'GET') {
     } else {
         $response['message'] = "Error fetching data: " . $conn->error;
     }
+    $stmt->close();
 } elseif ($method == 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
 
@@ -40,8 +50,8 @@ if ($method == 'GET') {
             case 'add':
                 if (isset($data['data'])) {
                     $t = $data['data'];
-                    $stmt = $conn->prepare("INSERT INTO transactions (type, amount, category, date, description) VALUES (?, ?, ?, ?, ?)");
-                    $stmt->bind_param("sdsss", $t['type'], $t['amount'], $t['category'], $t['date'], $t['description']);
+                    $stmt = $conn->prepare("INSERT INTO transactions (user_id, type, amount, category, date, description) VALUES (?, ?, ?, ?, ?, ?)");
+                    $stmt->bind_param("isdsss", $user_id, $t['type'], $t['amount'], $t['category'], $t['date'], $t['description']);
 
                     if ($stmt->execute()) {
                         $t['id'] = $stmt->insert_id;
@@ -58,8 +68,8 @@ if ($method == 'GET') {
             case 'update':
                 if (isset($data['data'])) {
                     $t = $data['data'];
-                    $stmt = $conn->prepare("UPDATE transactions SET type = ?, amount = ?, category = ?, date = ?, description = ? WHERE id = ?");
-                    $stmt->bind_param("sdsssi", $t['type'], $t['amount'], $t['category'], $t['date'], $t['description'], $t['id']);
+                    $stmt = $conn->prepare("UPDATE transactions SET type = ?, amount = ?, category = ?, date = ?, description = ? WHERE id = ? AND user_id = ?");
+                    $stmt->bind_param("sdsssii", $t['type'], $t['amount'], $t['category'], $t['date'], $t['description'], $t['id'], $user_id);
 
                     if ($stmt->execute()) {
                         $response = ['success' => true, 'data' => $t];
@@ -75,8 +85,8 @@ if ($method == 'GET') {
             case 'delete':
                 if (isset($data['id'])) {
                     $id = $data['id'];
-                    $stmt = $conn->prepare("DELETE FROM transactions WHERE id = ?");
-                    $stmt->bind_param("i", $id);
+                    $stmt = $conn->prepare("DELETE FROM transactions WHERE id = ? AND user_id = ?");
+                    $stmt->bind_param("ii", $id, $user_id);
 
                     if ($stmt->execute()) {
                         $response = ['success' => true, 'id' => $id];
@@ -90,20 +100,23 @@ if ($method == 'GET') {
                 break;
 
             case 'clear':
-                if ($conn->query("TRUNCATE TABLE transactions")) {
+                $stmt = $conn->prepare("DELETE FROM transactions WHERE user_id = ?");
+                $stmt->bind_param("i", $user_id);
+                if ($stmt->execute()) {
                     $response = ['success' => true];
                 } else {
                     $response['message'] = "Error clearing data: " . $conn->error;
                 }
+                $stmt->close();
                 break;
 
             case 'batch_add':
                 if (isset($data['data']) && is_array($data['data'])) {
                     $conn->begin_transaction();
                     try {
-                        $stmt = $conn->prepare("INSERT INTO transactions (type, amount, category, date, description) VALUES (?, ?, ?, ?, ?)");
+                        $stmt = $conn->prepare("INSERT INTO transactions (user_id, type, amount, category, date, description) VALUES (?, ?, ?, ?, ?, ?)");
                         foreach ($data['data'] as $t) {
-                            $stmt->bind_param("sdsss", $t['type'], $t['amount'], $t['category'], $t['date'], $t['description']);
+                            $stmt->bind_param("isdsss", $user_id, $t['type'], $t['amount'], $t['category'], $t['date'], $t['description']);
                             $stmt->execute();
                         }
                         $stmt->close();
