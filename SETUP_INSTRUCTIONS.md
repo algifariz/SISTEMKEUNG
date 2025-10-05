@@ -1,54 +1,61 @@
-# Setup Instructions for Money Tracker (XAMPP Version)
+# Setup Instructions for Money Tracker (Supabase Version)
 
-This guide will walk you through setting up the Money Tracker application to run on a local server using XAMPP.
+This guide will walk you through setting up the Money Tracker application to run with a Supabase backend.
 
 ## Prerequisites
-- You need to have XAMPP installed on your computer. If you don't have it, download and install it from [here](https://www.apachefriends.org/index.html).
+- A Supabase account. You can create one for free at [supabase.com](https://supabase.com).
+- A local web server to serve the static files. You can use the VS Code "Live Server" extension, Python's built-in server, or any other simple server.
 
-## Step 1: Place Project Files
+## Step 1: Create a Supabase Project
 
-1.  Navigate to your XAMPP installation directory.
-2.  Find the `htdocs` folder. This is the web server's root directory.
-3.  Place all the project files (`index.html`, `style.css`, `script.js`, `database.sql`, and the `api` folder) into a new folder inside `htdocs`. For example, you can create a folder named `money-tracker`.
+1.  Go to your Supabase dashboard and click **"New project"**.
+2.  Give your project a name and a strong database password.
+3.  Wait for your new project to be provisioned.
 
+## Step 2: Set Up the Database Schema
+
+1.  Once your project is ready, navigate to the **SQL Editor** from the left sidebar.
+2.  Click **"+ New query"**.
+3.  Open the `supabase_schema.sql` file from this project, copy its entire content, and paste it into the Supabase SQL Editor.
+4.  Click the **"RUN"** button.
+
+This will create the `users` and `transactions` tables and set up the necessary Row Level Security (RLS) policies.
+
+## Step 3: Connect the Application to Supabase
+
+1.  In your Supabase project, go to **Project Settings** (the gear icon in the left sidebar).
+2.  Click on the **API** tab.
+3.  Find your **Project URL** and your **`anon` public key**.
+4.  Open the `supabase_client.js` file in the project code.
+5.  Replace the placeholder values for `supabaseUrl` and `supabaseKey` with the credentials you just copied.
+
+    ```javascript
+    // supabase_client.js
+    const supabaseUrl = 'YOUR_SUPABASE_PROJECT_URL';
+    const supabaseKey = 'YOUR_SUPABASE_ANON_KEY';
+
+    window.supabase = supabase.createClient(supabaseUrl, supabaseKey);
     ```
-    xampp/
-    └── htdocs/
-        └── money-tracker/
-            ├── index.html
-            ├── style.css
-            ├── script.js
-            ├── database.sql
-            └── api/
-                ├── config.php
-                └── handler.php
-    ```
 
-## Step 2: Start Apache and MySQL
+## Step 4: Disable Email Confirmation (for local testing)
 
-1.  Open the XAMPP Control Panel.
-2.  Start the **Apache** module.
-3.  Start the **MySQL** module.
+By default, Supabase requires users to verify their email address after signing up. For easier local testing, you can disable this.
 
-Wait for both modules to turn green, indicating they are running correctly.
+1.  In your Supabase project, go to **Authentication** (the user icon in the left sidebar).
+2.  Click on **Providers** and expand the **Email** provider.
+3.  Turn **off** the "Confirm email" toggle.
 
-## Step 3: Create the Database
+## Step 5: Run the Application
 
-1.  In the XAMPP Control Panel, click the **Admin** button next to the MySQL module. This will open phpMyAdmin in your web browser.
-2.  In phpMyAdmin, click on the **"New"** button in the left sidebar to create a new database.
-3.  Enter `money_tracker` as the database name and click **"Create"**.
-4.  Once the database is created, select it from the left sidebar.
-5.  Click on the **"Import"** tab at the top.
-6.  Click on **"Choose File"** and select the `database.sql` file from your project directory.
-7.  Scroll down and click the **"Go"** button to start the import.
+Since the application is now purely frontend (HTML, CSS, JS), you just need a simple local server.
 
-After a few moments, you should see a success message and a new `transactions` table in your `money_tracker` database.
+**Option A: Using VS Code Live Server**
+1.  Install the "Live Server" extension in VS Code.
+2.  Right-click on `index.html` and select "Open with Live Server".
 
-## Step 4: Run the Application
+**Option B: Using Python's built-in server**
+1.  Open your terminal in the project's root directory.
+2.  Run the command: `python -m http.server`
+3.  Open your web browser and navigate to `http://localhost:8000`.
 
-1.  Open your web browser.
-2.  Navigate to the following URL: `http://localhost/money-tracker/`
-
-    *(Note: If you named your project folder something other than `money-tracker`, replace it in the URL accordingly.)*
-
-The application should now be running, connected to your local MySQL database. You can start adding, viewing, and managing your transactions.
+The application should now be running, connected to your Supabase backend. You can create an account and start managing your transactions.
