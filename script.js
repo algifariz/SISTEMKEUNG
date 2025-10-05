@@ -124,13 +124,8 @@ async function updateTransaction(e) {
     e.preventDefault();
     
     const id = parseInt(document.getElementById('edit-id').value);
-    const index = transactions.findIndex(t => t.id === id);
-    if (index === -1) return;
-
-    const originalTransaction = { ...transactions[index] };
-
     const updatedTransaction = {
-        ...originalTransaction,
+        id: id,
         type: document.getElementById('edit-type').value,
         amount: parseFloat(document.getElementById('edit-amount').value),
         category: document.getElementById('edit-category').value,
@@ -138,11 +133,7 @@ async function updateTransaction(e) {
         description: document.getElementById('edit-description').value
     };
 
-    // Optimistic UI update
-    transactions[index] = updatedTransaction;
-    updateAllDisplays();
-    closeEditModal();
-    showNotification('Transaksi sedang diperbarui...', 'info');
+    showNotification('Memperbarui transaksi...', 'info');
 
     try {
         const response = await fetch(API_URL, {
@@ -153,21 +144,16 @@ async function updateTransaction(e) {
         const result = await response.json();
 
         if (result.success) {
-            // The server might return slightly different data (e.g., formatted), so we update with the server's response
-            transactions[index] = result.data;
-            updateAllDisplays(); // Update again with final data
+            closeEditModal();
             showNotification('Transaksi berhasil diperbarui! ✨', 'success');
+            // Reload all data from server to ensure UI is in sync
+            await loadDataFromServer();
         } else {
-            // Revert UI on failure
-            transactions[index] = originalTransaction;
-            updateAllDisplays();
             showNotification(`Gagal memperbarui: ${result.message}`, 'error');
         }
     } catch (error) {
-        // Revert UI on network error
-        transactions[index] = originalTransaction;
-        updateAllDisplays();
         showNotification('Gagal memperbarui. Periksa koneksi server.', 'error');
+        console.error('Update error:', error);
     }
 }
 
@@ -176,15 +162,7 @@ async function deleteTransaction(id) {
         return;
     }
 
-    const index = transactions.findIndex(t => t.id === id);
-    if (index === -1) return;
-
-    const deletedTransaction = transactions[index];
-
-    // Optimistic UI update
-    transactions.splice(index, 1);
-    updateAllDisplays();
-    showNotification('Transaksi sedang dihapus...', 'info');
+    showNotification('Menghapus transaksi...', 'info');
 
     try {
         const response = await fetch(API_URL, {
@@ -196,17 +174,14 @@ async function deleteTransaction(id) {
 
         if (result.success) {
             showNotification('Transaksi berhasil dihapus! 🗑️', 'success');
+            // Reload all data from server to ensure UI is in sync
+            await loadDataFromServer();
         } else {
-            // Revert UI on failure
-            transactions.splice(index, 0, deletedTransaction);
-            updateAllDisplays();
             showNotification(`Gagal menghapus: ${result.message}`, 'error');
         }
     } catch (error) {
-        // Revert UI on network error
-        transactions.splice(index, 0, deletedTransaction);
-        updateAllDisplays();
         showNotification('Gagal menghapus. Periksa koneksi server.', 'error');
+        console.error('Delete error:', error);
     }
 }
 
