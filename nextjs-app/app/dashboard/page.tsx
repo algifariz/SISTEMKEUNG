@@ -1,7 +1,9 @@
+'use client';
+
 import Head from 'next/head';
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/router';
-import { supabase } from '@/lib/supabaseClient';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 import withAuth from '@/components/auth/withAuth';
 import Header from '@/components/dashboard/Header';
 import Navigation from '@/components/dashboard/Navigation';
@@ -13,17 +15,37 @@ import PengaturanContent from '@/components/dashboard/PengaturanContent';
 import FloatingActionButton from '@/components/dashboard/FloatingActionButton';
 import EditModal from '@/components/dashboard/EditModal';
 
+// Define types for better code quality
+interface Transaction {
+    id: number;
+    user_id: string;
+    type: 'Pemasukan' | 'Pengeluaran';
+    category: string;
+    amount: number;
+    date: string;
+    description: string;
+    created_at: string;
+}
+
+interface NewTransaction {
+    type: 'Pemasukan' | 'Pengeluaran';
+    category: string;
+    amount: number;
+    date: string;
+    description: string;
+}
+
 const DashboardPage = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
-    const [transactions, setTransactions] = useState([]);
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditModalOpen, setEditModalOpen] = useState(false);
-    const [transactionToEdit, setTransactionToEdit] = useState(null);
+    const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
     const router = useRouter();
 
-    const showNotification = (message, type) => {
+    const showNotification = (message: string, type: 'success' | 'error') => {
         console.log(`Notification (${type}): ${message}`);
-        // Replace with a more robust notification system if available
+        // In a real app, you would use a toast library like react-toastify
         alert(`${type.toUpperCase()}: ${message}`);
     };
 
@@ -37,7 +59,7 @@ const DashboardPage = () => {
         if (error) {
             showNotification(`Error loading data: ${error.message}`, 'error');
         } else {
-            setTransactions(data);
+            setTransactions(data as Transaction[]);
         }
         setLoading(false);
     }, []);
@@ -46,7 +68,7 @@ const DashboardPage = () => {
         loadDataFromServer();
     }, [loadDataFromServer]);
 
-    const handleAddTransaction = async (newTransaction) => {
+    const handleAddTransaction = async (newTransaction: NewTransaction) => {
         const { error } = await supabase.from('transactions').insert([newTransaction]);
         if (error) {
             showNotification(`Error: ${error.message}`, 'error');
@@ -57,7 +79,7 @@ const DashboardPage = () => {
         }
     };
 
-    const handleUpdateTransaction = async (id, updatedTransaction) => {
+    const handleUpdateTransaction = async (id: number, updatedTransaction: Partial<NewTransaction>) => {
         const { error } = await supabase.from('transactions').update(updatedTransaction).match({ id });
         if (error) {
             showNotification(`Gagal memperbarui: ${error.message}`, 'error');
@@ -68,7 +90,7 @@ const DashboardPage = () => {
         }
     };
 
-    const handleDeleteTransaction = async (id) => {
+    const handleDeleteTransaction = async (id: number) => {
         if (!confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) return;
         const { error } = await supabase.from('transactions').delete().match({ id });
         if (error) {
@@ -86,7 +108,7 @@ const DashboardPage = () => {
         }
     };
 
-    const openEditModal = (transaction) => {
+    const openEditModal = (transaction: Transaction) => {
         setTransactionToEdit(transaction);
         setEditModalOpen(true);
     };
@@ -127,7 +149,7 @@ const DashboardPage = () => {
                 </main>
 
                 <FloatingActionButton setActiveTab={setActiveTab} />
-                {isEditModalOpen && <EditModal transaction={transactionToEdit} onSave={handleUpdateTransaction} onClose={closeEditModal} />}
+                {isEditModalOpen && transactionToEdit && <EditModal transaction={transactionToEdit} onSave={handleUpdateTransaction} onClose={closeEditModal} />}
                 <div id="notification-container" className="fixed top-4 right-4 z-50 space-y-2"></div>
             </div>
         </>

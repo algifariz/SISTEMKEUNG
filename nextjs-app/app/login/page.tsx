@@ -1,40 +1,39 @@
+'use client';
+
 import Head from 'next/head';
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/router';
-import { supabase } from '@/lib/supabaseClient';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
-export default function RegisterPage() {
+export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
     // Placeholder for notification system
-    const showNotification = (message, type) => {
+    const showNotification = (message: string, type: string) => {
+        // In a real app, this would trigger a toast notification
         console.log(`Notification (${type}): ${message}`);
         if (type === 'error') {
             alert(`Error: ${message}`);
-        } else {
-            alert(`Success: ${message}`);
         }
     };
 
-    const handleRegister = async (e) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        const { data, error } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signInWithPassword({
             email: email,
             password: password,
         });
 
         if (error) {
             showNotification(error.message, 'error');
-        } else if (data.user && data.user.identities && data.user.identities.length === 0) {
-             showNotification('Registrasi gagal: Pengguna dengan email ini sudah ada.', 'error');
         } else {
-            showNotification('Registrasi berhasil! Silakan periksa email Anda untuk verifikasi.', 'success');
-            router.push('/'); // Redirect to login page after successful registration
+            showNotification('Login berhasil! Mengarahkan ke dashboard...', 'success');
+            router.push('/dashboard');
         }
         setLoading(false);
     };
@@ -42,7 +41,7 @@ export default function RegisterPage() {
     return (
         <>
             <Head>
-                <title>Register - MoneyTracker</title>
+                <title>Login - MoneyTracker</title>
                 <link rel="manifest" href="/manifest.json" />
                 <meta name="theme-color" content="#4f46e5" />
                 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
@@ -54,12 +53,12 @@ export default function RegisterPage() {
                     <div className="text-center mb-8">
                         <h1 className="text-3xl sm:text-4xl font-bold mb-2 text-indigo-600">
                             <i className="fas fa-coins mr-2 text-yellow-400"></i>
-                            Create Account
+                            MoneyTracker
                         </h1>
-                        <p className="text-lg text-gray-600">Join MoneyTracker today!</p>
+                        <p className="text-lg text-gray-600">Selamat datang kembali!</p>
                     </div>
 
-                    <form onSubmit={handleRegister} className="space-y-6">
+                    <form onSubmit={handleLogin} className="space-y-6">
                         <div>
                             <label htmlFor="username" className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
                             <div className="relative">
@@ -88,7 +87,7 @@ export default function RegisterPage() {
                                     type="password"
                                     id="password"
                                     className="input-elegant w-full pl-12 pr-4 py-3 rounded-xl focus:outline-none"
-                                    placeholder="Create a password"
+                                    placeholder="Enter your password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
@@ -97,9 +96,9 @@ export default function RegisterPage() {
                         </div>
 
                         <button type="submit" className="w-full btn-elegant text-white py-3 px-6 rounded-xl font-semibold text-lg" disabled={loading}>
-                            {loading ? 'Registering...' : (
+                            {loading ? 'Logging in...' : (
                                 <>
-                                    <i className="fas fa-user-plus mr-2"></i>Register
+                                    <i className="fas fa-sign-in-alt mr-2"></i>Login
                                 </>
                             )}
                         </button>
@@ -107,14 +106,15 @@ export default function RegisterPage() {
 
                     <div className="text-center mt-6">
                         <p className="text-gray-600">
-                            Already have an account?{' '}
-                            <Link href="/" className="font-semibold text-indigo-600 hover:underline">
-                                Login here
+                            Belum punya akun?{' '}
+                            <Link href="/register" className="font-semibold text-indigo-600 hover:underline">
+                                Daftar di sini
                             </Link>
                         </p>
                     </div>
                 </div>
 
+                {/* This notification container can be replaced with a proper toast library */}
                 <div id="notification-container" className="fixed top-4 right-4 z-50 space-y-2"></div>
             </div>
         </>

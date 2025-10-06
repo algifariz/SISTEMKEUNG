@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
-import '@/styles/globals.css';
+'use client';
 
-export default function App({ Component, pageProps }) {
+import { useEffect } from 'react';
+
+export default function ServiceWorkerRegistrar() {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -16,5 +17,5 @@ export default function App({ Component, pageProps }) {
     }
   }, []);
 
-  return <Component {...pageProps} />;
+  return null;
 }
