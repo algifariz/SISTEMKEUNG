@@ -25,7 +25,7 @@ export default function LoginPage() {
 
         if (signInError) {
             if (signInError.message.toLowerCase().includes('failed to fetch')) {
-                 setError('Gagal terhubung ke server. Periksa koneksi internet Anda. Jika Anda adalah developer, pastikan variabel lingkungan NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY sudah benar di Vercel.');
+                setError('Gagal terhubung ke server. Ini kemungkinan besar karena variabel lingkungan untuk Supabase belum diatur di Vercel. Silakan merujuk ke file INSTRUCTIONS_FOR_VERCEL_DEPLOYMENT.md di repositori Anda untuk panduan konfigurasi.');
             } else if (signInError.message.toLowerCase().includes('invalid login credentials')) {
                 setError('Email atau password yang Anda masukkan salah.');
             } else {
