@@ -39,6 +39,7 @@ const DashboardPage = () => {
     const [activeTab, setActiveTab] = useState('dashboard');
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
+    const [dataError, setDataError] = useState<string | null>(null);
     const [isEditModalOpen, setEditModalOpen] = useState(false);
     const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
     const router = useRouter();
@@ -51,6 +52,8 @@ const DashboardPage = () => {
 
     const loadDataFromServer = useCallback(async () => {
         setLoading(true);
+        setDataError(null);
+
         const { data: { user } } = await supabase.auth.getUser();
 
         if (user) {
@@ -61,10 +64,17 @@ const DashboardPage = () => {
                 .order('date', { ascending: false });
 
             if (error) {
-                showNotification(`Error loading data: ${error.message}`, 'error');
+                if (error.message.toLowerCase().includes('failed to fetch')) {
+                    setDataError('Gagal memuat data. Periksa koneksi internet Anda. Jika masalah berlanjut, pastikan konfigurasi Supabase sudah benar.');
+                } else {
+                    setDataError(`Terjadi kesalahan saat memuat data: ${error.message}`);
+                }
+                setTransactions([]); // Clear transactions on error
             } else {
                 setTransactions(data as Transaction[]);
             }
+        } else {
+             setDataError('Tidak dapat mengambil data pengguna. Silakan coba login kembali.');
         }
         setLoading(false);
     }, []);
@@ -148,8 +158,16 @@ const DashboardPage = () => {
                 <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
 
                 <main className="container mx-auto px-4 sm:px-6 py-6 sm:py-8">
-                    {loading ? (
-                        <div className="text-center p-12">Loading data...</div>
+                     {loading ? (
+                        <div className="text-center p-12 text-gray-500">Memuat data...</div>
+                    ) : dataError ? (
+                        <div className="text-center p-12 bg-red-50 rounded-lg">
+                            <p className="text-red-600 font-semibold">Gagal Memuat Data</p>
+                            <p className="text-gray-700 mt-2">{dataError}</p>
+                            <button onClick={loadDataFromServer} className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                                Coba Lagi
+                            </button>
+                        </div>
                     ) : (
                         <>
                             {activeTab === 'dashboard' && <DashboardContent transactions={transactions} setActiveTab={setActiveTab} />}
