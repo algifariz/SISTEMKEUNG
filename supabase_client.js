@@ -1,5 +1,5 @@
-const supabaseUrl = 'https://ezomqixhbjtonqhfbpac.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6b21xaXhoYmp0b25xaGZicGFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2NDUwMDQsImV4cCI6MjA3NTIyMTAwNH0.WfLWVt3KIxyXgaqbj8x3_teFMvHPGhzgia8tQ2VVMs8';
+const supabaseUrl = 'https://mlaagecwordpjbsxeluf.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sYWFnZWN3b3JkcGpic3hlbHVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3MzgyNDAsImV4cCI6MjA3NTMxNDI0MH0.Jg_tSfx3ivE8S0bhr81ExTRdtmWLdkXnO5zbYF1LPdQ';
 
 // The global `supabase` object is defined by the CDN script.
 // We create a client instance from it and re-assign the global `supabase` variable.
