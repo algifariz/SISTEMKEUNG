@@ -102,4 +102,16 @@ Follow these instructions to get the project up and running on your local machin
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
+### Configuring Environment Variables on Vercel
+
+For your Vercel deployment to connect to Supabase, you **must** add the Supabase URL and Anon Key as environment variables in your Vercel project settings. This is the most common reason for login and data fetching issues on a deployed site.
+
+1.  Go to your project's dashboard on Vercel.
+2.  Navigate to the **Settings** tab.
+3.  Click on **Environment Variables** in the side menu.
+4.  Add the following two variables, ensuring they are **not** set as "Secret" variables so they are exposed to the browser:
+    -   `NEXT_PUBLIC_SUPABASE_URL`: Your project's Supabase URL.
+    -   `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your project's Supabase anon key.
+5.  Save the changes. Vercel will automatically trigger a new deployment with the updated environment variables.
+
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.

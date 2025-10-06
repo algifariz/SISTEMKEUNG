@@ -10,29 +10,28 @@ export default function LoginPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const router = useRouter();
-
-    // Placeholder for notification system
-    const showNotification = (message: string, type: string) => {
-        // In a real app, this would trigger a toast notification
-        console.log(`Notification (${type}): ${message}`);
-        if (type === 'error') {
-            alert(`Error: ${message}`);
-        }
-    };
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        const { error } = await supabase.auth.signInWithPassword({
+        setError(null); // Clear previous errors
+
+        const { error: signInError } = await supabase.auth.signInWithPassword({
             email: email,
             password: password,
         });
 
-        if (error) {
-            showNotification(error.message, 'error');
+        if (signInError) {
+            if (signInError.message.toLowerCase().includes('failed to fetch')) {
+                 setError('Gagal terhubung ke server. Periksa koneksi internet Anda. Jika Anda adalah developer, pastikan variabel lingkungan NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY sudah benar di Vercel.');
+            } else if (signInError.message.toLowerCase().includes('invalid login credentials')) {
+                setError('Email atau password yang Anda masukkan salah.');
+            } else {
+                setError(`Terjadi kesalahan: ${signInError.message}`);
+            }
         } else {
-            showNotification('Login berhasil! Mengarahkan ke dashboard...', 'success');
             router.push('/dashboard');
         }
         setLoading(false);
@@ -57,6 +56,13 @@ export default function LoginPage() {
                         </h1>
                         <p className="text-lg text-gray-600">Selamat datang kembali!</p>
                     </div>
+
+                    {error && (
+                        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6" role="alert">
+                            <strong className="font-bold">Oops!</strong>
+                            <span className="block sm:inline ml-2">{error}</span>
+                        </div>
+                    )}
 
                     <form onSubmit={handleLogin} className="space-y-6">
                         <div>
