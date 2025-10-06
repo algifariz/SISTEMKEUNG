@@ -51,15 +51,20 @@ const DashboardPage = () => {
 
     const loadDataFromServer = useCallback(async () => {
         setLoading(true);
-        const { data, error } = await supabase
-            .from('transactions')
-            .select('*')
-            .order('date', { ascending: false });
+        const { data: { user } } = await supabase.auth.getUser();
 
-        if (error) {
-            showNotification(`Error loading data: ${error.message}`, 'error');
-        } else {
-            setTransactions(data as Transaction[]);
+        if (user) {
+            const { data, error } = await supabase
+                .from('transactions')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('date', { ascending: false });
+
+            if (error) {
+                showNotification(`Error loading data: ${error.message}`, 'error');
+            } else {
+                setTransactions(data as Transaction[]);
+            }
         }
         setLoading(false);
     }, []);
@@ -69,7 +74,15 @@ const DashboardPage = () => {
     }, [loadDataFromServer]);
 
     const handleAddTransaction = async (newTransaction: NewTransaction) => {
-        const { error } = await supabase.from('transactions').insert([newTransaction]);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            showNotification('You must be logged in to add a transaction.', 'error');
+            return;
+        }
+
+        const transactionWithUserId = { ...newTransaction, user_id: user.id };
+
+        const { error } = await supabase.from('transactions').insert([transactionWithUserId]);
         if (error) {
             showNotification(`Error: ${error.message}`, 'error');
         } else {

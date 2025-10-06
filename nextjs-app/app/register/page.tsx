@@ -30,15 +30,14 @@ export default function RegisterPage() {
             password: password,
         });
 
+        setLoading(false);
+
         if (error) {
             showNotification(error.message, 'error');
-        } else if (data.user && data.user.identities && data.user.identities.length === 0) {
-             showNotification('Registrasi gagal: Pengguna dengan email ini sudah ada.', 'error');
         } else {
             showNotification('Registrasi berhasil! Silakan periksa email Anda untuk verifikasi.', 'success');
-            router.push('/login'); // Redirect to login page after successful registration
+            router.push('/login');
         }
-        setLoading(false);
     };
 
     return (
