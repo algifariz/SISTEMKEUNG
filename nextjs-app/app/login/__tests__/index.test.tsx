@@ -1,18 +1,12 @@
+import React from 'react';
 import { render, screen } from '@testing-library/react';
-import LoginPage from '../index';
+import LoginPage from '../page';
 
-// Mock the Next.js router
-jest.mock('next/router', () => ({
-  useRouter() {
-    return {
-      route: '/',
-      pathname: '',
-      query: '',
-      asPath: '',
-      push: jest.fn(),
-      replace: jest.fn(),
-    };
-  },
+// Mock the next/navigation module
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+  }),
 }));
 
 describe('LoginPage', () => {
@@ -22,12 +16,15 @@ describe('LoginPage', () => {
     // Check for the main heading
     expect(screen.getByRole('heading', { name: /MoneyTracker/i })).toBeInTheDocument();
 
-    // Check for form elements
+    // Check for email and password input fields
     expect(screen.getByLabelText(/Email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Password/i)).toBeInTheDocument();
+
+    // Check for the login button
     expect(screen.getByRole('button', { name: /Login/i })).toBeInTheDocument();
 
     // Check for the link to the registration page
-    expect(screen.getByText(/Daftar di sini/i)).toBeInTheDocument();
+    expect(screen.getByText(/Belum punya akun?/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Daftar di sini/i })).toBeInTheDocument();
   });
 });
