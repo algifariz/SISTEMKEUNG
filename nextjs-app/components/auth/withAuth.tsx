@@ -1,16 +1,19 @@
-import { useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { supabase } from '@/lib/supabaseClient';
+'use client';
 
-const withAuth = (WrappedComponent) => {
-  const AuthComponent = (props) => {
+import { useEffect, ComponentType } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import React from 'react';
+
+const withAuth = <P extends object>(WrappedComponent: ComponentType<P>) => {
+  const AuthComponent = (props: P) => {
     const router = useRouter();
 
     useEffect(() => {
       const checkAuth = async () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          router.replace('/');
+          router.replace('/login');
         }
       };
 
@@ -18,7 +21,7 @@ const withAuth = (WrappedComponent) => {
 
       const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_OUT') {
-          router.replace('/');
+          router.replace('/login');
         }
       });
 
@@ -29,6 +32,8 @@ const withAuth = (WrappedComponent) => {
 
     return <WrappedComponent {...props} />;
   };
+
+  AuthComponent.displayName = `WithAuth(${WrappedComponent.displayName || WrappedComponent.name || 'Component'})`;
 
   return AuthComponent;
 };
